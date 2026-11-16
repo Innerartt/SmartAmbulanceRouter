@@ -6,8 +6,15 @@
 
 namespace sar {
 
+struct Identity {
+    template <typename T>
+    constexpr auto operator()(const T& x) const -> const T& {
+        return x;
+    }
+};
+
 // Generic iterative binary search: returns index or -1
-template <typename T, typename Key, typename Extractor = std::identity>
+template <typename T, typename Key, typename Extractor = Identity>
 int binarySearchIterative(const std::vector<T>& arr, const Key& key, Extractor ext = Extractor{}) {
     int low = 0;
     int high = static_cast<int>(arr.size()) - 1;
@@ -26,7 +33,7 @@ int binarySearchIterative(const std::vector<T>& arr, const Key& key, Extractor e
 }
 
 // Generic recursive binary search helper
-template <typename T, typename Key, typename Extractor = std::identity>
+template <typename T, typename Key, typename Extractor = Identity>
 int binarySearchRecursive(const std::vector<T>& arr, const Key& key, int low, int high, Extractor ext = Extractor{}) {
     if (low > high) return -1;
     int mid = low + (high - low) / 2;
@@ -44,4 +51,3 @@ int findHospitalByCapacity(const std::vector<Hospital>& sortedHospitals, int min
 int findAmbulanceById(const std::vector<Ambulance>& sortedAmbulances, int id);
 
 } // namespace sar
-
