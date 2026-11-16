@@ -1,0 +1,28 @@
+# Build directories and outputs
+build/
+bin/
+obj/
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# Executables
+smart_ambulance
+run_tests
+run_benchmarks
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CMake temporary files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile.cmake

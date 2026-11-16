@@ -1,0 +1,10 @@
+id,lat,lon,severity,description,timestamp,resolved
+0,28.6180,77.2120,CRITICAL,Cardiac arrest at Central Market,12000,0
+1,28.6220,77.2190,URGENT,Pedestrian hit by two-wheeler,12045,0
+2,28.6100,77.2210,STANDARD,Fractured arm in residential colony,12100,0
+3,28.6290,77.2030,CRITICAL,Severe respiratory failure,12180,0
+4,28.5750,77.2060,STANDARD,Minor food poisoning,12250,0
+5,28.6070,77.2240,URGENT,Industrial burn injury,12320,0
+6,28.6340,77.2020,CRITICAL,Multiple car pile-up victim,12400,0
+7,28.5820,77.2090,STANDARD,Elderly fall injury,12490,0
+

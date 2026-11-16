@@ -1,0 +1,7 @@
+id,name,lat,lon,total_beds,occupied_beds,icu_beds,icu_occupied,specialties
+0,City General Hospital,28.6139,77.2090,120,45,20,5,Trauma;Cardiology;General
+1,Apollo Metro Clinic,28.6250,77.2180,80,30,12,4,Neurology;Orthopedics
+2,Fortis Care Hospital,28.6050,77.2250,150,60,25,10,Pediatrics;Trauma;Burn
+3,Max Super Specialty,28.6320,77.2010,200,90,30,8,Cardiology;Oncology;Surgery
+4,Safdarjung Emergency Hub,28.5700,77.2050,300,120,50,15,Trauma;ICU;Burns;General
+
