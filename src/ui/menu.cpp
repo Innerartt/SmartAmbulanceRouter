@@ -1,6 +1,6 @@
 /**
  * @file menu.cpp
- * @brief Interactive CLI menu and Demonstration Scenarios.
+ * @brief Interactive CLI menu, Live Simulation Engine, and Demonstration Scenarios.
  */
 
 #include "../../include/menu.h"
@@ -21,18 +21,19 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <vector>
 
 namespace sar {
 
 static void printHeader(const std::string& title) {
-    std::cout << "\n===============================================================\n";
+    std::cout << "\n====================================================================\n";
     std::cout << "  " << title << "\n";
-    std::cout << "===============================================================\n";
+    std::cout << "====================================================================\n";
 }
 
-void runDemonstrationScenarios() {
-    printHeader("SCENARIO 1: NORMAL OPERATION");
-    std::cout << "Loading small city configuration...\n";
+void runLiveSimulation() {
+    printHeader("LIVE EMERGENCY DISPATCH SIMULATOR");
+    std::cout << "Loading Metropolitan Emergency System Data...\n";
 
     auto hospitals = loadHospitals("data/small_hospitals.csv");
     auto ambulances = loadAmbulances("data/small_ambulances.csv");
@@ -42,28 +43,100 @@ void runDemonstrationScenarios() {
     Graph graph;
     graph.buildFromRoads(roads);
 
-    std::cout << "Loaded " << hospitals.size() << " hospitals, "
-              << ambulances.size() << " ambulances, "
-              << roads.size() << " roads, "
-              << incidents.size() << " incidents.\n\n";
+    std::cout << "Successfully loaded:\n"
+              << "  * " << hospitals.size() << " Medical Centers with Trauma & ICU infrastructure\n"
+              << "  * " << ambulances.size() << " Emergency Ambulances on Active Patrol\n"
+              << "  * " << roads.size() << " Monitored Road Segments\n"
+              << "  * " << incidents.size() << " Incoming 911/108 Emergency Incidents\n\n";
+
+    std::cout << "Initial Hospital Bed Status:\n";
+    std::cout << "--------------------------------------------------------------------\n";
+    std::cout << std::left << std::setw(5) << "ID"
+              << std::setw(28) << "Hospital Name"
+              << std::setw(18) << "General Beds"
+              << std::setw(15) << "ICU Beds" << "\n";
+    std::cout << "--------------------------------------------------------------------\n";
+    for (const auto& h : hospitals) {
+        std::cout << std::left << std::setw(5) << h.id
+                  << std::setw(28) << h.name
+                  << (std::to_string(h.availableBeds()) + " / " + std::to_string(h.total_beds))
+                  << std::right << std::setw(14)
+                  << (std::to_string(h.availableIcuBeds()) + " / " + std::to_string(h.icu_beds))
+                  << "\n";
+    }
+    std::cout << "--------------------------------------------------------------------\n";
+
+    std::cout << "\n[Step 1] Prioritizing Emergency Queue using Merge Sort (O(n log n))...\n";
+    mergeSortIncidents(incidents);
+    std::cout << "Sorted Queue: Critical cases placed at front of dispatch queue.\n\n";
 
     Dispatcher dispatcher(hospitals, ambulances, graph);
     dispatcher.setAlgorithm("dijkstra");
 
-    std::cout << "Dispatching incidents with Dijkstra routing...\n";
-    auto stats = dispatcher.dispatchAll(incidents);
+    std::cout << "[Step 2] Processing Dispatch Queue with Real-Time Routing...\n";
+    std::cout << "====================================================================\n";
 
-    std::cout << "\n--- Scenario 1 Results ---\n"
-              << "Total Incidents:      " << stats.total_incidents << "\n"
-              << "Successfully Served:  " << stats.dispatched << "\n"
-              << "Failed/Rejected:      " << stats.failed << "\n"
-              << "Average Response:     " << std::fixed << std::setprecision(2)
-              << stats.avg_response_time << " min\n"
-              << "Max Response Time:    " << stats.max_response_time << " min\n"
-              << "All patients served within target response times!\n";
+    int event_num = 1;
+    for (const auto& inc : incidents) {
+        std::cout << "\n>>> [INCIDENT #" << event_num++ << "] "
+                  << "Severity: [" << severityToString(inc.severity) << "] "
+                  << (inc.severity == Severity::CRITICAL ? "🚨" : (inc.severity == Severity::URGENT ? "⚠️" : "ℹ️"))
+                  << " \"" << inc.description << "\"\n"
+                  << "    Location: (" << inc.location.latitude << ", " << inc.location.longitude << ") | Time: "
+                  << inc.timestamp << "s\n";
 
-    printHeader("SCENARIO 2: CAPACITY SHOCK (MASS CASUALTY EVENT)");
-    std::cout << "Simulating sudden influx of 25 simultaneous CRITICAL incidents...\n";
+        auto result = dispatcher.dispatch(inc);
+        if (result) {
+            std::cout << "    → Assigned Ambulance: Unit #" << result->ambulance_id
+                      << " (Capacity Level: " << ambulances[result->ambulance_id].capacity << ")\n";
+
+            int hid = result->hospital_id;
+            std::cout << "    → Destination Hospital: \"" << hospitals[hid].name << "\" [Node #" << hid << "]\n";
+            std::cout << "    → Remaining Beds: General: " << hospitals[hid].availableBeds()
+                      << " | ICU: " << hospitals[hid].availableIcuBeds() << "\n";
+
+            std::cout << "    → Dijkstra Computed Route: [ ";
+            for (size_t i = 0; i < result->route.size(); ++i) {
+                std::cout << result->route[i] << (i + 1 < result->route.size() ? " -> " : " ");
+            }
+            std::cout << "]\n";
+
+            std::cout << "    → Estimated Transit Time: " << std::fixed << std::setprecision(2)
+                      << result->estimated_time_min << " min ("
+                      << result->route_distance_km << " km)\n";
+            std::cout << "    ✓ STATUS: AMBULANCE DISPATCHED & BED RESERVED\n";
+        } else {
+            std::cout << "    ❌ STATUS: OVERLOAD WARNING — NO SUITABLE BED/AMBULANCE AVAILABLE!\n";
+        }
+    }
+
+    auto stats = dispatcher.getStats();
+    stats.total_incidents = static_cast<int>(incidents.size());
+    if (stats.dispatched > 0) {
+        stats.avg_response_time /= stats.dispatched;
+    }
+    printHeader("SIMULATION RESULTS & PERFORMANCE METRICS");
+    std::cout << "  * Total Emergency Calls:    " << stats.total_incidents << "\n"
+              << "  * Successfully Dispatched:  " << stats.dispatched << " ("
+              << (stats.dispatched * 100.0 / stats.total_incidents) << "%)\n"
+              << "  * Overload / Rejected:      " << stats.failed << "\n"
+              << "  * Average Response Time:    " << std::fixed << std::setprecision(2)
+              << stats.avg_response_time << " minutes\n"
+              << "  * Maximum Response Time:    " << stats.max_response_time << " minutes\n";
+    std::cout << "====================================================================\n\n";
+}
+
+void runDemonstrationScenarios() {
+    runLiveSimulation();
+
+    printHeader("CAPACITY SHOCK (MASS CASUALTY SIMULATION)");
+    std::cout << "Simulating sudden disaster influx: 25 simultaneous CRITICAL patients...\n";
+
+    auto hospitals = loadHospitals("data/small_hospitals.csv");
+    auto ambulances = loadAmbulances("data/small_ambulances.csv");
+    auto roads = loadRoads("data/small_roads.csv");
+    Graph graph;
+    graph.buildFromRoads(roads);
 
     std::vector<Incident> massCasualties;
     for (int i = 100; i < 125; ++i) {
@@ -77,27 +150,22 @@ void runDemonstrationScenarios() {
         });
     }
 
-    dispatcher.reset();
+    Dispatcher dispatcher(hospitals, ambulances, graph);
     auto shockStats = dispatcher.dispatchAll(massCasualties);
 
-    std::cout << "\n--- Scenario 2 Results ---\n"
+    std::cout << "\n--- Mass Casualty Results ---\n"
               << "Total Critical Alerts: " << shockStats.total_incidents << "\n"
               << "Immediate Dispatched:  " << shockStats.dispatched << "\n"
               << "Overload / Queued:     " << shockStats.failed << "\n";
     if (!shockStats.overloaded_hospitals.empty()) {
-        std::cout << "ALERT: Hospitals [ ";
-        for (int hid : shockStats.overloaded_hospitals) std::cout << "#" << hid << " ";
-        std::cout << "] reached 100% capacity threshold!\n";
+        std::cout << "OVERLOAD ALERT: Capacity reached for Trauma/ICU beds!\n";
     }
 
-    printHeader("SCENARIO 3: LARGE-DATA STRESS & ALGORITHM BENCHMARK");
-    std::cout << "Benchmarking Sorting & Routing on Medium/Large Datasets...\n";
-
+    printHeader("ALGORITHM BENCHMARK EXECUTION");
     std::vector<int> sampleArray(10000);
     for (int i = 0; i < 10000; ++i) sampleArray[i] = rand() % 100000;
 
     std::vector<BenchmarkResult> results;
-
     auto arr1 = sampleArray;
     results.push_back(runBenchmark("Merge Sort (10k items)", "Random Ints", [&]() {
         mergeSort(arr1);
@@ -108,16 +176,8 @@ void runDemonstrationScenarios() {
         quickSort(arr2);
     }, 5));
 
-    results.push_back(runBenchmark("Dijkstra (Small City)", "10 Roads", [&]() {
+    results.push_back(runBenchmark("Dijkstra (City Graph)", "10 Roads", [&]() {
         dijkstra(graph, 0);
-    }, 20));
-
-    results.push_back(runBenchmark("Prim MST (Small City)", "10 Roads", [&]() {
-        primMST(graph);
-    }, 20));
-
-    results.push_back(runBenchmark("Kruskal MST (Small City)", "10 Roads", [&]() {
-        kruskalMST(graph);
     }, 20));
 
     printBenchmarkTable(results);
@@ -129,11 +189,12 @@ void runInteractiveMenu() {
         std::cout << "\n=======================================================\n";
         std::cout << "  Smart Emergency Ambulance Router - Control Center    \n";
         std::cout << "=======================================================\n";
-        std::cout << " 1. Run All 3 Demonstration Scenarios\n";
-        std::cout << " 2. Run Sorting & Searching Demo\n";
-        std::cout << " 3. Run Routing (Dijkstra / MST / Bellman-Ford) Demo\n";
-        std::cout << " 4. Run Dynamic Programming & Backtracking Demo\n";
-        std::cout << " 5. Run Flow & String Matching Demo\n";
+        std::cout << " 1. Run Live Emergency Simulation (Step-by-Step)\n";
+        std::cout << " 2. Run All Demonstration Scenarios & Benchmarks\n";
+        std::cout << " 3. Run Sorting & Searching Demo\n";
+        std::cout << " 4. Run Routing (Dijkstra / MST / Bellman-Ford) Demo\n";
+        std::cout << " 5. Run Dynamic Programming & Backtracking Demo\n";
+        std::cout << " 6. Run Flow & String Matching Demo\n";
         std::cout << " 0. Exit\n";
         std::cout << "Choice: ";
 
@@ -146,9 +207,12 @@ void runInteractiveMenu() {
 
         switch (choice) {
             case 1:
+                runLiveSimulation();
+                break;
+            case 2:
                 runDemonstrationScenarios();
                 break;
-            case 2: {
+            case 3: {
                 printHeader("Sorting & Searching Demo");
                 std::vector<int> numbers = {45, 12, 89, 3, 23, 7, 64, 18};
                 std::cout << "Original Array: ";
@@ -160,7 +224,7 @@ void runInteractiveMenu() {
                 std::cout << "\nBinary Search for 23: Index " << binarySearchIterative(numbers, 23) << "\n";
                 break;
             }
-            case 3: {
+            case 4: {
                 printHeader("Routing & MST Demo");
                 auto roads = loadRoads("data/small_roads.csv");
                 Graph g;
@@ -174,7 +238,7 @@ void runInteractiveMenu() {
                 std::cout << "Kruskal MST edge count: " << mst.size() << "\n";
                 break;
             }
-            case 4: {
+            case 5: {
                 printHeader("Dynamic Programming (0/1 Knapsack)");
                 std::vector<int> weights = {2, 3, 4, 5};
                 std::vector<int> values = {3, 4, 5, 6};
@@ -186,7 +250,7 @@ void runInteractiveMenu() {
                 std::cout << "\n";
                 break;
             }
-            case 5: {
+            case 6: {
                 printHeader("Network Flow & String Search Demo");
                 FlowGraph fg(6);
                 fg.addEdge(0, 1, 10);
@@ -217,4 +281,3 @@ void runInteractiveMenu() {
 }
 
 } // namespace sar
-

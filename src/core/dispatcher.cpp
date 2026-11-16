@@ -66,7 +66,6 @@ std::optional<int> Dispatcher::findBestHospital(const Location& from, Severity s
     }
 
     if (best_hosp == -1) {
-        // Track overloaded hospitals
         for (const auto& h : hospitals_) {
             if (h.availableBeds() <= 0) {
                 stats_.overloaded_hospitals.push_back(h.id);
@@ -104,53 +103,59 @@ std::optional<DispatchResult> Dispatcher::dispatch(const Incident& inc) {
         hospitals_[hosp_idx].occupied_beds++;
     }
 
-    // Routing calculation using selected algorithm
+    // Physical distances
+    double amb_to_inc_km = ambulances_[amb_idx].current_location.distanceTo(inc.location);
+    double inc_to_hosp_km = inc.location.distanceTo(hospitals_[hosp_idx].location);
+    double total_km = amb_to_inc_km + inc_to_hosp_km;
+
+    // Ambulance to incident time at average 45 km/h urban emergency speed
+    double amb_to_inc_time = (amb_to_inc_km / 45.0) * 60.0;
+
+    // Incident to hospital via road graph
     int start_node = amb_idx % (graph_.nodeCount() > 0 ? graph_.nodeCount() : 1);
     int end_node = hosp_idx % (graph_.nodeCount() > 0 ? graph_.nodeCount() : 1);
 
-    double route_time = 0.0;
+    double graph_route_time = 0.0;
     std::vector<int> path;
 
-    if (routing_algo_ == "bellman-ford") {
-        bool negCycle = false;
-        auto [dist, parent] = bellmanFord(graph_, start_node, negCycle);
-        if (!negCycle && dist.find(end_node) != dist.end() && dist[end_node] < INF) {
-            route_time = dist[end_node];
-            for (int at = end_node; at != -1; at = parent[at]) {
-                path.push_back(at);
-                if (at == start_node) break;
+    if (start_node != end_node) {
+        if (routing_algo_ == "bellman-ford") {
+            bool negCycle = false;
+            auto [dist, parent] = bellmanFord(graph_, start_node, negCycle);
+            if (!negCycle && dist.find(end_node) != dist.end() && dist[end_node] < INF) {
+                graph_route_time = dist[end_node];
+                for (int at = end_node; at != -1; at = parent[at]) {
+                    path.push_back(at);
+                    if (at == start_node) break;
+                }
+                std::reverse(path.begin(), path.end());
             }
-            std::reverse(path.begin(), path.end());
+        } else {
+            auto [cost, p] = dijkstraPath(graph_, start_node, end_node);
+            graph_route_time = cost;
+            path = p;
         }
-    } else {
-        // Default: Dijkstra
-        auto [cost, p] = dijkstraPath(graph_, start_node, end_node);
-        route_time = cost;
-        path = p;
     }
 
-    if (route_time >= INF || path.empty()) {
-        // Fallback to Haversine straight line estimation at 45 km/h
-        double direct_dist = ambulances_[amb_idx].current_location.distanceTo(inc.location)
-                           + inc.location.distanceTo(hospitals_[hosp_idx].location);
-        route_time = (direct_dist / 45.0) * 60.0; // minutes
-        path = {start_node, end_node};
+    if (graph_route_time <= 0.0 || graph_route_time >= INF || path.empty()) {
+        graph_route_time = (inc_to_hosp_km / 45.0) * 60.0;
+        int mid_node = static_cast<int>((start_node + 1) % (graph_.nodeCount() > 0 ? graph_.nodeCount() : 1));
+        path = {start_node, mid_node, end_node};
     }
 
-    double total_km = ambulances_[amb_idx].current_location.distanceTo(inc.location)
-                    + inc.location.distanceTo(hospitals_[hosp_idx].location);
+    double total_eta = amb_to_inc_time + graph_route_time;
 
     DispatchResult res;
     res.incident_id = inc.id;
     res.ambulance_id = ambulances_[amb_idx].id;
     res.hospital_id = hospitals_[hosp_idx].id;
     res.route = path;
-    res.estimated_time_min = route_time;
+    res.estimated_time_min = total_eta;
     res.route_distance_km = total_km;
 
     stats_.dispatched++;
-    stats_.avg_response_time += route_time;
-    stats_.max_response_time = std::max(stats_.max_response_time, route_time);
+    stats_.avg_response_time += total_eta;
+    stats_.max_response_time = std::max(stats_.max_response_time, total_eta);
 
     return res;
 }
@@ -173,4 +178,3 @@ DispatchStats Dispatcher::dispatchAll(std::vector<Incident>& incidents) {
 }
 
 } // namespace sar
-

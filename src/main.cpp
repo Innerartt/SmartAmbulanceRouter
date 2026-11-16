@@ -13,10 +13,11 @@
 static void printUsage(const char* prog) {
     std::cout << "Usage: " << prog << " [OPTIONS]\n"
               << "Options:\n"
-              << "  --demo       Run all 3 demonstration scenarios\n"
-              << "  --benchmark  Run comprehensive algorithm benchmark suite\n"
-              << "  --help       Show this help message\n"
-              << "  (no args)    Launch interactive console menu\n";
+              << "  --sim, --simulate  Run step-by-step live emergency simulation\n"
+              << "  --demo             Run all 3 demonstration scenarios\n"
+              << "  --benchmark        Run comprehensive algorithm benchmark suite\n"
+              << "  --help             Show this help message\n"
+              << "  (no args)          Launch interactive console menu\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -27,7 +28,10 @@ int main(int argc, char* argv[]) {
 
     if (argc > 1) {
         std::string arg = argv[1];
-        if (arg == "--demo") {
+        if (arg == "--sim" || arg == "--simulate") {
+            sar::runLiveSimulation();
+            return 0;
+        } else if (arg == "--demo") {
             sar::runDemonstrationScenarios();
             return 0;
         } else if (arg == "--benchmark") {
@@ -46,4 +50,3 @@ int main(int argc, char* argv[]) {
     sar::runInteractiveMenu();
     return 0;
 }
-
