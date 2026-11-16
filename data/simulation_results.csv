@@ -1,0 +1,9 @@
+﻿incident_id,severity,status,ambulance_id,hospital_id,estimated_time_min,route_distance_km,route
+0,CRITICAL,DISPATCHED,5,0,0.72,0.54,"0 -> 1 -> 0"
+3,CRITICAL,DISPATCHED,3,3,0.81,0.61,"3 -> 4 -> 3"
+6,CRITICAL,DISPATCHED,8,3,0.62,0.47,"3 -> 4 -> 3"
+1,URGENT,DISPATCHED,1,1,1.06,0.80,"1 -> 2 -> 1"
+5,URGENT,DISPATCHED,2,2,0.87,0.65,"2 -> 3 -> 2"
+2,STANDARD,DISPATCHED,7,2,2.34,1.75,"2 -> 3 -> 2"
+4,STANDARD,DISPATCHED,9,4,1.27,0.96,"4 -> 0 -> 4"
+7,STANDARD,DISPATCHED,4,4,2.18,1.63,"4 -> 0 -> 4"

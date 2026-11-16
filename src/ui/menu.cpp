@@ -22,6 +22,8 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <fstream>
+#include <algorithm>
 
 namespace sar {
 
@@ -39,6 +41,8 @@ void runLiveSimulation() {
     auto ambulances = loadAmbulances("data/small_ambulances.csv");
     auto roads = loadRoads("data/small_roads.csv");
     auto incidents = loadIncidents("data/small_incidents.csv");
+    incidents.erase(std::remove_if(incidents.begin(), incidents.end(),
+        [](const Incident& incident) { return incident.resolved; }), incidents.end());
 
     Graph graph;
     graph.buildFromRoads(roads);
@@ -77,6 +81,8 @@ void runLiveSimulation() {
     std::cout << "====================================================================\n";
 
     int event_num = 1;
+    std::ofstream resultsFile("data/simulation_results.csv");
+    if (resultsFile) resultsFile << "incident_id,severity,status,ambulance_id,hospital_id,estimated_time_min,route_distance_km,route\n";
     for (const auto& inc : incidents) {
         std::cout << "\n>>> [INCIDENT #" << event_num++ << "] "
                   << "Severity: [" << severityToString(inc.severity) << "] "
@@ -87,13 +93,21 @@ void runLiveSimulation() {
 
         auto result = dispatcher.dispatch(inc);
         if (result) {
+            const auto ambulance = std::find_if(ambulances.begin(), ambulances.end(),
+                [&](const Ambulance& item) { return item.id == result->ambulance_id; });
+            const auto hospital = std::find_if(hospitals.begin(), hospitals.end(),
+                [&](const Hospital& item) { return item.id == result->hospital_id; });
+            const int capacity = ambulance != ambulances.end() ? ambulance->capacity : 0;
+            const std::string hospitalName = hospital != hospitals.end() ? hospital->name : "Unknown";
             std::cout << "    → Assigned Ambulance: Unit #" << result->ambulance_id
-                      << " (Capacity Level: " << ambulances[result->ambulance_id].capacity << ")\n";
+                      << " (Capacity Level: " << capacity << ")\n";
 
             int hid = result->hospital_id;
-            std::cout << "    → Destination Hospital: \"" << hospitals[hid].name << "\" [Node #" << hid << "]\n";
-            std::cout << "    → Remaining Beds: General: " << hospitals[hid].availableBeds()
-                      << " | ICU: " << hospitals[hid].availableIcuBeds() << "\n";
+            std::cout << "    → Destination Hospital: \"" << hospitalName << "\" [ID #" << hid << "]\n";
+            if (hospital != hospitals.end()) {
+                std::cout << "    → Remaining Beds: General: " << hospital->availableBeds()
+                          << " | ICU: " << hospital->availableIcuBeds() << "\n";
+            }
 
             std::cout << "    → Dijkstra Computed Route: [ ";
             for (size_t i = 0; i < result->route.size(); ++i) {
@@ -105,6 +119,17 @@ void runLiveSimulation() {
                       << result->estimated_time_min << " min ("
                       << result->route_distance_km << " km)\n";
             std::cout << "    ✓ STATUS: AMBULANCE DISPATCHED & BED RESERVED\n";
+            if (resultsFile) {
+                resultsFile << inc.id << ',' << severityToString(inc.severity) << ",DISPATCHED,"
+                    << result->ambulance_id << ',' << result->hospital_id << ','
+                    << std::fixed << std::setprecision(2) << result->estimated_time_min << ','
+                    << result->route_distance_km << ",\"";
+                for (size_t i = 0; i < result->route.size(); ++i) {
+                    if (i) resultsFile << " -> ";
+                    resultsFile << result->route[i];
+                }
+                resultsFile << "\"\n";
+            }
         } else {
             std::cout << "    ❌ STATUS: OVERLOAD WARNING — NO SUITABLE BED/AMBULANCE AVAILABLE!\n";
         }
