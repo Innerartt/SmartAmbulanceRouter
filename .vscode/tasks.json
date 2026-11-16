@@ -1,0 +1,53 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run SmartAmbulanceRouter (Interactive)",
+            "type": "shell",
+            "command": ".\\smart_ambulance.exe",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run SmartAmbulanceRouter (Demo)",
+            "type": "shell",
+            "command": ".\\smart_ambulance.exe --demo",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run SmartAmbulanceRouter (Simulation)",
+            "type": "shell",
+            "command": ".\\smart_ambulance.exe --sim",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build SmartAmbulanceRouter (g++)",
+            "type": "shell",
+            "command": "g++ -std=c++17 -O2 -Iinclude src/core/*.cpp src/algorithms/*.cpp src/ui/*.cpp src/main.cpp -o smart_ambulance.exe",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}

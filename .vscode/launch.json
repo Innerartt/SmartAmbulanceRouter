@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run SmartAmbulance (Interactive)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_ambulance.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe"
+        },
+        {
+            "name": "Run SmartAmbulance (Demo Scenarios)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_ambulance.exe",
+            "args": ["--demo"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe"
+        },
+        {
+            "name": "Run SmartAmbulance (Live Simulation)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/smart_ambulance.exe",
+            "args": ["--sim"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe"
+        }
+    ]
+}

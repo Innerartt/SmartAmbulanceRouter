@@ -14,7 +14,6 @@ run_tests
 run_benchmarks
 
 # IDE & Editor files
-.vscode/
 .idea/
 *.swp
 *.swo
